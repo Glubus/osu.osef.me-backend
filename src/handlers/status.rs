@@ -16,6 +16,7 @@ use crate::{
     models::{
         status::{get_history, get_metrics_with_fallback, HistoryEntry},
     },
+    services::beatmap_processor::BeatmapProcessor,
 };
 
 /// Handler pour la page de status principale
@@ -52,6 +53,9 @@ pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<Stri
     // Métriques réseau simulées (calcul très léger)
     let (network_status, _network_load, _network_percent) = get_network_metrics();
     
+    // Queue de traitement des beatmaps
+    let beatmap_queue_size = BeatmapProcessor::instance().queue_size();
+    
     // Remplacements dans le template (toutes les données viennent du cache)
     let rendered = template
         .replace("{API_NAME}", env!("CARGO_PKG_NAME"))
@@ -80,6 +84,9 @@ pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<Stri
         
         // Réseau
         .replace("{NETWORK_STATUS}", &network_status)
+        
+        // Queue de beatmaps
+        .replace("{BEATMAP_QUEUE_SIZE}", &beatmap_queue_size.to_string())
         
         // Historique
         .replace("{HISTORY_BARS_HTML}", &history_bars)
@@ -122,6 +129,9 @@ fn generate_fallback_page(template: &str) -> String {
         .replace("{UPTIME_HOURS}", "0")
         
         .replace("{NETWORK_STATUS}", "Initialisation")
+        
+        // Queue de beatmaps
+        .replace("{BEATMAP_QUEUE_SIZE}", "0")
         
         // Historique vide au démarrage
         .replace("{HISTORY_BARS_HTML}", "")

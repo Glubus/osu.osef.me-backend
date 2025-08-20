@@ -4,49 +4,49 @@
 //! Il configure et démarre le serveur HTTP avec Axum.
 //!
 //! ## Fonctionnalités
-//! - Configuration depuis config.toml
+//! - Configuration depuis les variables d'environnement (.env)
 //! - Initialisation de la base de données
 //! - Configuration du logging
 //! - Configuration CORS
 //! - Gestion des erreurs
 
-mod config;
-mod db;
-mod handlers;
-mod models;
-mod routes;
-mod fixtures;
-mod middleware;
-
 use axum::Router;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use fixtures::run_fixtures;
-use crate::middleware::logging::setup_middleware;
-use crate::models::status::start_background_metrics_task;
+use api::models::status::start_background_metrics_task;
+use api::middleware::logging::setup_middleware;
 
 /// Point d'entrée principal de l'application.
 ///
 /// Cette fonction :
-/// 1. Charge la configuration depuis config.toml
+/// 1. Charge la configuration depuis les variables d'environnement
 /// 2. Initialise la base de données
 /// 3. Configure les routes et les middlewares
 /// 4. Démarre le serveur HTTP
 #[tokio::main]
 async fn main() {
 
-    // Load configuration from config.toml
-    let config = config::Config::load(include_str!("../assets/config.toml")).expect("Failed to load configuration");
+    // Load configuration from environment variables
+    let config = api::config::Config::load().expect("Failed to load configuration");
 
     // Initialize database
-    let mut db = db::DatabaseManager::new();
+    let mut db = api::db::DatabaseManager::new();
     db.connect(&config)
         .await
         .expect("Failed to connect to database");
 
-    // Run fixtures
-    run_fixtures(db.get_pool(), true).await.expect("Failed to run fixtures");
+    // Initialize global OsuApiService
+    api::services::osu_api::OsuApiService::initialize(
+        config.osu_api.client_id,
+        config.osu_api.client_secret.clone(),
+    )
+    .await
+    .expect("Failed to initialize OsuApiService");
+
+    // Initialize global BeatmapProcessor
+    let processor = api::services::beatmap_processor::BeatmapProcessor::instance();
+    processor.initialize(db.clone());
 
     // Démarrer la tâche de calcul des métriques en arrière-plan
     start_background_metrics_task(db.clone(), config.clone()).await;
@@ -54,7 +54,7 @@ async fn main() {
 
     // Build our application with a route
     let app = Router::new()
-        .merge(routes::create_router(db))
+        .merge(api::routes::create_router(db))
         .layer(CorsLayer::permissive());
 
     let app = setup_middleware(app);

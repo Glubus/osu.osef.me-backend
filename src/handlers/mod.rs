@@ -9,3 +9,4 @@
 
 pub mod help;
 pub mod status;
+pub mod beatmap;

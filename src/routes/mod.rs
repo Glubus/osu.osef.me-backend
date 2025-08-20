@@ -19,6 +19,7 @@ use utoipa::OpenApi;
 
 // Re-export all route modules here
 pub mod help;
+pub mod beatmap;
 
 #[derive(OpenApi)]
 #[openapi(paths(crate::handlers::help::health_check, crate::handlers::help::health_light,
@@ -31,6 +32,7 @@ pub fn create_router(db: DatabaseManager) -> Router {
         .route("/", get(crate::handlers::status::status_page))
         // Routes API
         .nest("/api", help::router())
+        .nest("/api", beatmap::router())
         .merge(SwaggerUi::new("/api/swagger").url("/api-doc/openapi.json", ApiDoc::openapi()))
         // Add your other route modules here
         // Example:
