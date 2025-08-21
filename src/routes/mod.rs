@@ -26,7 +26,7 @@ pub mod beatmap;
                 crate::handlers::help::info, crate::handlers::help::ping))]
 struct ApiDoc;
 
-pub fn create_router(db: DatabaseManager) -> Router {
+pub fn create_router(db: DatabaseManager) -> Router<DatabaseManager> {
     Router::new()
         // Page de status principale à la racine
         .route("/", get(crate::handlers::status::status_page))

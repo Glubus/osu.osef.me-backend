@@ -44,3 +44,5 @@ htmlcov/
 
 # Scripts
 push-all.sh
+
+deploy.sh

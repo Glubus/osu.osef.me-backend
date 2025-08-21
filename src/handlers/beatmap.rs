@@ -1,8 +1,8 @@
 use anyhow::Result;
 use axum::{
-    extract::{State, Query, Path},
+    extract::{State, Query, Path, Json},
     http::StatusCode,
-    response::{Json, Response},
+    response::Response,
 };
 use serde::{Deserialize, Serialize};
 use crate::db::DatabaseManager;
@@ -35,16 +35,22 @@ pub async fn batch_checksums_handler(
     State(_db): State<DatabaseManager>,
     Json(payload): Json<BatchChecksumsRequest>,
 ) -> Result<Json<BatchChecksumsResponse>, StatusCode> {
-
+    tracing::info!("batch_checksums_handler: received {} checksums", payload.checksums.len());
     let processor = BeatmapProcessor::instance();
     let result = processor.add_checksums(payload.checksums).await;
     
     match result {
-        Ok(_) => Ok(Json(BatchChecksumsResponse {
+        Ok(_) => {
+            tracing::info!("batch_checksums_handler: enqueued successfully");
+            Ok(Json(BatchChecksumsResponse {
             message: "Batch ajouté à la queue de traitement".to_string(),
             status: "success".to_string(),
-        })),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        }))
+        },
+        Err(e) => {
+            tracing::error!("batch_checksums_handler: enqueue failed: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
 

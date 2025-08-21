@@ -6,7 +6,6 @@
 
 use axum::{
     extract::State,
-    http::StatusCode,
     response::Html,
 };
 use chrono::Utc;
@@ -16,13 +15,13 @@ use crate::{
     models::{
         status::{get_history, get_metrics_with_fallback, HistoryEntry},
     },
-    services::beatmap_processor::BeatmapProcessor,
+    models::beatmap::pending_beatmap::PendingBeatmap,
 };
 
 /// Handler pour la page de status principale
 /// OPTIMISÉ: N'appelle AUCUNE fonction de health check, utilise uniquement le cache
 /// Temps de réponse ultra-rapide, toutes les métriques sont pré-calculées en arrière-plan
-pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<String>, StatusCode> {
+pub async fn status_page(State(db): State<DatabaseManager>) -> Html<String> {
     // Charger le template HTML
     let template = include_str!("../../assets/status.html");
     
@@ -31,7 +30,7 @@ pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<Stri
         Some(m) => m,
         None => {
             // Fallback avec valeurs par défaut si aucun cache disponible (premier démarrage)
-            return Ok(Html(generate_fallback_page(template)));
+            return Html(generate_fallback_page(template));
         }
     };
     
@@ -53,8 +52,11 @@ pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<Stri
     // Métriques réseau simulées (calcul très léger)
     let (network_status, _network_load, _network_percent) = get_network_metrics();
     
-    // Queue de traitement des beatmaps
-    let beatmap_queue_size = BeatmapProcessor::instance().queue_size();
+    // Queue de traitement des beatmaps (directement depuis la DB)
+    let beatmap_queue_size = match PendingBeatmap::count(db.get_pool()).await {
+        Ok(count) => count as usize,
+        Err(_) => 0,
+    };
     
     // Remplacements dans le template (toutes les données viennent du cache)
     let rendered = template
@@ -98,7 +100,7 @@ pub async fn status_page(State(_db): State<DatabaseManager>) -> Result<Html<Stri
         .replace("{UPTIME_FULL}", &format_uptime(metrics.uptime))
         .replace("{LOAD_AVERAGE}", &get_load_average());
 
-    Ok(Html(rendered))
+    Html(rendered)
 }
 
 /// Génère une page de fallback si aucun cache n'est disponible
