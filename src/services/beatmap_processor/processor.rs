@@ -46,14 +46,25 @@ impl BeatmapProcessor {
                         info!("Traitement du beatmap pending: {}", pending.hash);
                             
                         let result = processor.process_single_checksum(pending.hash.clone()).await;
+                        
+                        // Toujours supprimer le pending, même en cas d'erreur
                         if let Some(db_ref) = processor.db.as_ref() {
                             if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
                                 error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
                             }
                         }
-                        info!("Beatmap traité avec succès: {}", pending.hash);
-                        // Break de 500ms quand on traite
-                        tokio::time::sleep(Duration::from_millis(500)).await;
+                        
+                        match result {
+                            Ok(_) => {
+                                info!("Beatmap traité avec succès: {}", pending.hash);
+                                // Break de 500ms quand on traite avec succès
+                                tokio::time::sleep(Duration::from_millis(500)).await;
+                            }
+                            Err(e) => {
+                                error!("Erreur lors du traitement du checksum {}: {}", pending.hash, e);
+                                // Pas de break en cas d'erreur, on continue directement
+                            }
+                        }
                     } else {
                         // Pas de pending, break de 10 secondes
                         tokio::time::sleep(Duration::from_secs(10)).await;
