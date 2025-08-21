@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use sqlx::{PgPool, Error as SqlxError, Row};
+use sqlx::{Error as SqlxError, PgPool, Row};
 
 #[derive(Debug, Clone)]
 pub struct PendingBeatmap {
@@ -16,7 +16,7 @@ impl PendingBeatmap {
             values ($1)
             on conflict (hash) do nothing
             returning id
-            "#
+            "#,
         )
         .bind(hash)
         .fetch_optional(pool)
@@ -29,7 +29,7 @@ impl PendingBeatmap {
         let result = sqlx::query(
             r#"
             delete from pending_beatmap where id = $1
-            "#
+            "#,
         )
         .bind(id)
         .execute(pool)
@@ -42,7 +42,7 @@ impl PendingBeatmap {
         let count = sqlx::query_scalar::<_, i64>(
             r#"
             select count(*) from pending_beatmap
-            "#
+            "#,
         )
         .fetch_one(pool)
         .await?;
@@ -51,7 +51,8 @@ impl PendingBeatmap {
     }
 
     pub async fn oldest(pool: &PgPool) -> Result<Option<Self>, SqlxError> {
-        let row = sqlx::query(
+        let row = sqlx::query_as!(
+            Self,
             r#"
             select id, hash, created_at
             from pending_beatmap
@@ -62,12 +63,6 @@ impl PendingBeatmap {
         .fetch_optional(pool)
         .await?;
 
-        Ok(row.map(|r| PendingBeatmap {
-            id: r.get::<i32, _>("id"),
-            hash: r.get::<String, _>("hash"),
-            created_at: r.get::<Option<NaiveDateTime>, _>("created_at"),
-        }))
+        Ok(row)
     }
 }
-
-

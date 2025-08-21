@@ -1,13 +1,13 @@
-use serde::{Deserialize, Serialize};
-use chrono::{NaiveDateTime};
-use rosu_v2::model::beatmap::BeatmapExtended;
-use sqlx::{PgPool, Error as SqlxError, Row};
+use crate::helpers::beatmap::{build_file_path, rank_status_to_string};
+use crate::helpers::common::{from_f32, from_f64};
+use crate::models::beatmap::beatmapset::Beatmapset;
+use crate::models::ratings::msd::MSD;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use crate::helpers::common::{from_f32, from_f64};
-use crate::helpers::beatmap::{rank_status_to_string, build_file_path};
-use crate::models::ratings::msd::MSD;
-use crate::models::beatmap::beatmapset::Beatmapset;
+use chrono::NaiveDateTime;
+use rosu_v2::model::beatmap::BeatmapExtended;
+use serde::{Deserialize, Serialize};
+use sqlx::{Error as SqlxError, PgPool, Row};
 
 // Structures courtes pour les listes
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -155,7 +155,6 @@ impl From<BeatmapExtended> for Beatmap {
     }
 }
 
-
 impl Beatmap {
     /// Insère un beatmap dans la base de données
     pub async fn insert_into_db(&self, pool: &PgPool) -> Result<i32, SqlxError> {
@@ -198,17 +197,20 @@ impl Beatmap {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BeatmapWithMSD{
+pub struct BeatmapWithMSD {
     pub beatmap: Option<Beatmap>,
     pub beatmapset: Option<Beatmapset>,
     pub msd: Option<MSD>,
 }
 
-impl BeatmapWithMSD{
-    pub async fn find_by_beatmap_id(pool: &PgPool, beatmap_id: i32) -> Result<Option<Self>, SqlxError> {
+impl BeatmapWithMSD {
+    pub async fn find_by_beatmap_id(
+        pool: &PgPool,
+        beatmap_id: i32,
+    ) -> Result<Option<Self>, SqlxError> {
         let beatmap = Beatmap::find_by_id(pool, beatmap_id).await?;
         let msd = MSD::find_by_beatmap_id(pool, beatmap_id).await?;
-        
+
         let beatmapset = if let Some(ref beatmap) = beatmap {
             if let Some(beatmapset_id) = beatmap.beatmapset_id {
                 Beatmapset::find_by_id(pool, beatmapset_id).await?
@@ -218,8 +220,12 @@ impl BeatmapWithMSD{
         } else {
             None
         };
-        
-        Ok(Some(Self { beatmap, beatmapset, msd }))
+
+        Ok(Some(Self {
+            beatmap,
+            beatmapset,
+            msd,
+        }))
     }
 }
 
@@ -234,14 +240,17 @@ impl BeatmapWithMSDShort {
              JOIN msd m ON b.id = m.beatmap_id
              LEFT JOIN beatmapset bs ON b.beatmapset_id = bs.id"
         );
-        
+
         let mut conditions: Vec<String> = Vec::new();
         let mut param_count = 0;
 
         if let Some(search_term) = &filters.search_term {
             if !search_term.is_empty() {
                 param_count += 1;
-                conditions.push(format!("(b.difficulty ILIKE ${} OR b.status ILIKE ${})", param_count, param_count));
+                conditions.push(format!(
+                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${})",
+                    param_count, param_count
+                ));
             }
         }
 
@@ -249,7 +258,7 @@ impl BeatmapWithMSDShort {
             param_count += 1;
             conditions.push(format!("m.overall >= ${}", param_count));
         }
-        
+
         if let Some(_overall_max) = filters.overall_max {
             param_count += 1;
             conditions.push(format!("m.overall <= ${}", param_count));
@@ -265,7 +274,7 @@ impl BeatmapWithMSDShort {
                     param_count += 1;
                     conditions.push(format!("m.{} <= ${}", pattern, param_count));
                 }
-                
+
                 param_count += 1;
                 conditions.push(format!("m.main_pattern ILIKE ${}", param_count));
             }
@@ -280,7 +289,7 @@ impl BeatmapWithMSDShort {
         let per_page = filters.per_page.unwrap_or(30);
         let page = filters.page.unwrap_or(1);
         let offset = (page - 1) * per_page;
-        
+
         param_count += 1;
         query.push_str(&format!(" ORDER BY b.id LIMIT ${}", param_count));
         param_count += 1;
@@ -299,7 +308,7 @@ impl BeatmapWithMSDShort {
         if let Some(overall_min) = filters.overall_min {
             query_builder = query_builder.bind(from_f64(overall_min));
         }
-        
+
         if let Some(overall_max) = filters.overall_max {
             query_builder = query_builder.bind(from_f64(overall_max));
         }
@@ -312,7 +321,7 @@ impl BeatmapWithMSDShort {
                 if let Some(pattern_max) = filters.pattern_max {
                     query_builder = query_builder.bind(from_f64(pattern_max));
                 }
-                
+
                 let pattern_search = format!("%\"{}\"%", pattern);
                 query_builder = query_builder.bind(pattern_search);
             }
@@ -333,12 +342,12 @@ impl BeatmapWithMSDShort {
                 mode: row.try_get(4)?,
                 status: row.try_get(5)?,
             };
-            
+
             let msd = MSDShort {
                 id: row.try_get(6)?,
                 overall: row.try_get(7)?,
             };
-            
+
             // Construire le beatmapset si les données sont disponibles
             let beatmapset = if let Ok(beatmapset_id) = row.try_get::<Option<i32>, _>(8) {
                 if beatmapset_id.is_some() {
@@ -356,14 +365,14 @@ impl BeatmapWithMSDShort {
             } else {
                 None
             };
-            
+
             results.push(BeatmapWithMSDShort {
                 beatmap: Some(beatmap),
                 beatmapset,
                 msd: Some(msd),
             });
         }
-        
+
         Ok(results)
     }
 
@@ -372,16 +381,19 @@ impl BeatmapWithMSDShort {
             "SELECT COUNT(*) as total
              FROM beatmap b 
              JOIN msd m ON b.id = m.beatmap_id
-             LEFT JOIN beatmapset bs ON b.beatmapset_id = bs.id"
+             LEFT JOIN beatmapset bs ON b.beatmapset_id = bs.id",
         );
-        
+
         let mut conditions: Vec<String> = Vec::new();
         let mut param_count = 0;
 
         if let Some(search_term) = &filters.search_term {
             if !search_term.is_empty() {
                 param_count += 1;
-                conditions.push(format!("(b.difficulty ILIKE ${} OR b.status ILIKE ${})", param_count, param_count));
+                conditions.push(format!(
+                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${})",
+                    param_count, param_count
+                ));
             }
         }
 
@@ -389,7 +401,7 @@ impl BeatmapWithMSDShort {
             param_count += 1;
             conditions.push(format!("m.overall >= ${}", param_count));
         }
-        
+
         if let Some(_overall_max) = filters.overall_max {
             param_count += 1;
             conditions.push(format!("m.overall <= ${}", param_count));
@@ -405,7 +417,7 @@ impl BeatmapWithMSDShort {
                     param_count += 1;
                     conditions.push(format!("m.{} <= ${}", pattern, param_count));
                 }
-                
+
                 param_count += 1;
                 conditions.push(format!("m.main_pattern ILIKE ${}", param_count));
             }
@@ -428,7 +440,7 @@ impl BeatmapWithMSDShort {
         if let Some(overall_min) = filters.overall_min {
             query_builder = query_builder.bind(from_f64(overall_min));
         }
-        
+
         if let Some(overall_max) = filters.overall_max {
             query_builder = query_builder.bind(from_f64(overall_max));
         }
@@ -441,7 +453,7 @@ impl BeatmapWithMSDShort {
                 if let Some(pattern_max) = filters.pattern_max {
                     query_builder = query_builder.bind(from_f64(pattern_max));
                 }
-                
+
                 let pattern_search = format!("%\"{}\"%", pattern);
                 query_builder = query_builder.bind(pattern_search);
             }
@@ -449,9 +461,7 @@ impl BeatmapWithMSDShort {
 
         let row = query_builder.fetch_one(pool).await?;
         let total: i64 = row.try_get(0)?;
-        
+
         Ok(total as usize)
     }
-
-
 }

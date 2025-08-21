@@ -52,4 +52,4 @@ pub struct EndpointInfo {
     pub path: String,
     pub method: String,
     pub description: String,
-} 
+}

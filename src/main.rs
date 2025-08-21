@@ -10,12 +10,12 @@
 //! - Configuration CORS
 //! - Gestion des erreurs
 
+use api::middleware::logging::setup_middleware;
+use api::models::status::start_background_metrics_task;
 use axum::Router;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use api::models::status::start_background_metrics_task;
-use api::middleware::logging::setup_middleware;
 
 /// Point d'entrée principal de l'application.
 ///
@@ -26,7 +26,6 @@ use api::middleware::logging::setup_middleware;
 /// 4. Démarre le serveur HTTP
 #[tokio::main]
 async fn main() {
-
     // Load configuration from environment variables
     let config = api::config::Config::load().expect("Failed to load configuration");
 
@@ -45,8 +44,7 @@ async fn main() {
     .expect("Failed to initialize OsuApiService");
 
     // Initialize global BeatmapProcessor
-    let processor = api::services::beatmap_processor::BeatmapProcessor::instance();
-    processor.initialize(db.clone());
+    api::services::beatmap_processor::BeatmapProcessor::initialize(db.clone());
 
     // Démarrer la tâche de calcul des métriques en arrière-plan
     start_background_metrics_task(db.clone(), config.clone()).await;

@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
-use sqlx::{PgPool, Error as SqlxError};
+use sqlx::{Error as SqlxError, PgPool};
 
 #[derive(Debug, Clone)]
 pub struct FailedQuery {

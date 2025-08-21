@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use std::env;
+use tracing::{info, warn};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ServerConfig {
@@ -63,16 +63,17 @@ impl Config {
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
         // Charger le fichier .env s'il existe
         dotenv::dotenv().ok();
-        
+
         // Charger les variables d'environnement
         let server_host = env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let server_port = env::var("SERVER_PORT")
             .unwrap_or_else(|_| "3000".to_string())
             .parse::<u16>()
             .unwrap_or(3000);
-        
-        let database_url = env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/template_db".to_string());
+
+        let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+            "postgres://postgres:postgres@localhost:5432/template_db".to_string()
+        });
         let max_connections = env::var("DATABASE_MAX_CONNECTIONS")
             .unwrap_or_else(|_| "10".to_string())
             .parse::<u32>()
@@ -81,37 +82,36 @@ impl Config {
             .unwrap_or_else(|_| "1".to_string())
             .parse::<u32>()
             .unwrap_or(1);
-        
+
         let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
         let log_format = env::var("LOG_FORMAT").unwrap_or_else(|_| "json".to_string());
-        
+
         // Parse CORS origins (comma-separated)
         let cors_origins = env::var("CORS_ALLOWED_ORIGINS")
             .unwrap_or_else(|_| "http://localhost:3000,http://127.0.0.1:3000".to_string())
             .split(',')
             .map(|s| s.trim().to_string())
             .collect();
-        
+
         let cors_methods = env::var("CORS_ALLOWED_METHODS")
             .unwrap_or_else(|_| "GET,POST,PUT,DELETE,OPTIONS".to_string())
             .split(',')
             .map(|s| s.trim().to_string())
             .collect();
-        
+
         let cors_headers = env::var("CORS_ALLOWED_HEADERS")
             .unwrap_or_else(|_| "content-type,authorization".to_string())
             .split(',')
             .map(|s| s.trim().to_string())
             .collect();
-        
+
         let osu_client_id = env::var("OSU_CLIENT_ID")
             .unwrap_or_else(|_| "12345".to_string())
             .parse::<u64>()
             .unwrap_or(12345);
-        let osu_client_secret = env::var("OSU_CLIENT_SECRET")
-            .unwrap_or_else(|_| "your_client_secret".to_string());
-        
-        
+        let osu_client_secret =
+            env::var("OSU_CLIENT_SECRET").unwrap_or_else(|_| "your_client_secret".to_string());
+
         let config = Config {
             server: ServerConfig {
                 host: server_host,
@@ -136,11 +136,14 @@ impl Config {
                 client_secret: osu_client_secret,
             },
         };
-        
+
         // Initialiser le logging avec la configuration
         Self::init_logging(&config.logging.level, &config.logging.format);
 
-        info!("Configuration loaded successfully from environment variables. Server will bind to: {}", config.server_address());
+        info!(
+            "Configuration loaded successfully from environment variables. Server will bind to: {}",
+            config.server_address()
+        );
         Ok(config)
     }
 
@@ -179,10 +182,7 @@ impl Default for Config {
                     "DELETE".to_string(),
                     "OPTIONS".to_string(),
                 ],
-                allowed_headers: vec![
-                    "content-type".to_string(),
-                    "authorization".to_string(),
-                ],
+                allowed_headers: vec!["content-type".to_string(), "authorization".to_string()],
             },
             osu_api: OsuApiConfig {
                 client_id: 12345,

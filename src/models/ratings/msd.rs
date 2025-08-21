@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Error as SqlxError};
+use crate::helpers::common::from_f32;
+use crate::helpers::common::from_f64;
+use crate::helpers::msd::calculate_main_pattern;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use crate::helpers::common::from_f64;
 use chrono::NaiveDateTime;
 use minacalc_rs::Ssr;
-use crate::helpers::common::from_f32;
-use crate::helpers::msd::calculate_main_pattern;
+use serde::{Deserialize, Serialize};
+use sqlx::{Error as SqlxError, PgPool};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MSD {
@@ -154,7 +154,10 @@ impl MSD {
     }
 
     /// Récupère un MSD par beatmap_id
-    pub async fn find_by_beatmap_id(pool: &PgPool, beatmap_id: i32) -> Result<Option<Self>, SqlxError> {
+    pub async fn find_by_beatmap_id(
+        pool: &PgPool,
+        beatmap_id: i32,
+    ) -> Result<Option<Self>, SqlxError> {
         let query = sqlx::query_as!(
             MSD,
             r#"
@@ -173,21 +176,28 @@ impl MSD {
         query.fetch_optional(pool).await
     }
 
-
-    pub async fn find_by_beatmap_id_and_rate(pool: &PgPool, beatmap_id: i32, rate: f64) -> Result<Option<Self>, SqlxError> {
+    pub async fn find_by_beatmap_id_and_rate(
+        pool: &PgPool,
+        beatmap_id: i32,
+        rate: f64,
+    ) -> Result<Option<Self>, SqlxError> {
         let query = sqlx::query_as!(
             MSD,
             r#"
             SELECT * FROM msd WHERE beatmap_id = $1 AND rate = $2
             "#,
-            beatmap_id, from_f64(rate)
+            beatmap_id,
+            from_f64(rate)
         );
 
         query.fetch_optional(pool).await
     }
 
     /// Récupère tous les MSD pour un beatmap
-    pub async fn find_all_by_beatmap_id(pool: &PgPool, beatmap_id: i32) -> Result<Vec<Self>, SqlxError> {
+    pub async fn find_all_by_beatmap_id(
+        pool: &PgPool,
+        beatmap_id: i32,
+    ) -> Result<Vec<Self>, SqlxError> {
         let query = sqlx::query_as!(
             MSD,
             r#"

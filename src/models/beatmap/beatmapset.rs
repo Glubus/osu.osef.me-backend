@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-use chrono::{NaiveDateTime};
-use rosu_v2::model::beatmap::BeatmapsetExtended;
-use sqlx::{PgPool, Error as SqlxError, Row};
-use async_trait::async_trait;
 use crate::helpers::beatmap::rank_status_to_string;
+use async_trait::async_trait;
+use chrono::NaiveDateTime;
+use rosu_v2::model::beatmap::BeatmapsetExtended;
+use serde::{Deserialize, Serialize};
+use sqlx::{Error as SqlxError, PgPool, Row};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Beatmapset {
@@ -43,6 +43,22 @@ impl Insert for Beatmapset {
                 cover_url, preview_url, osu_file_url
             ) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            ON CONFLICT (osu_id) DO UPDATE SET
+                artist = EXCLUDED.artist,
+                artist_unicode = EXCLUDED.artist_unicode,
+                title = EXCLUDED.title,
+                title_unicode = EXCLUDED.title_unicode,
+                creator = EXCLUDED.creator,
+                source = EXCLUDED.source,
+                tags = EXCLUDED.tags,
+                has_video = EXCLUDED.has_video,
+                has_storyboard = EXCLUDED.has_storyboard,
+                is_explicit = EXCLUDED.is_explicit,
+                is_featured = EXCLUDED.is_featured,
+                cover_url = EXCLUDED.cover_url,
+                preview_url = EXCLUDED.preview_url,
+                osu_file_url = EXCLUDED.osu_file_url,
+                updated_at = now()
             RETURNING id
             "#,
             self.osu_id,
@@ -150,10 +166,15 @@ impl Beatmapset {
     }
 
     /// Recherche des beatmapsets par artiste ou titre
-    pub async fn search(pool: &PgPool, search_term: &str, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<Self>, SqlxError> {
+    pub async fn search(
+        pool: &PgPool,
+        search_term: &str,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> Result<Vec<Self>, SqlxError> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
-        
+
         let query = sqlx::query_as_unchecked!(
             Beatmapset,
             r#"
@@ -180,10 +201,14 @@ impl Beatmapset {
     }
 
     /// Récupère tous les beatmapsets avec pagination
-    pub async fn find_all(pool: &PgPool, limit: Option<i64>, offset: Option<i64>) -> Result<Vec<Self>, SqlxError> {
+    pub async fn find_all(
+        pool: &PgPool,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> Result<Vec<Self>, SqlxError> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
-        
+
         let query = sqlx::query_as_unchecked!(
             Beatmapset,
             r#"

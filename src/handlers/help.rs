@@ -4,20 +4,16 @@
 //! Ces handlers permettent de vérifier l'état de santé du système et d'obtenir
 //! des informations utiles pour le debugging et le monitoring.
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::State, http::StatusCode, response::Json};
 use chrono::Utc;
-use sysinfo::{Disks, System};
 use std::time::Instant;
+use sysinfo::{Disks, System};
 
 use crate::{
     db::DatabaseManager,
     models::help::{
-        HealthResponse, DatabaseStatus, SystemMetrics,
-        PerformanceMetrics, InfoResponse, EndpointInfo,
+        DatabaseStatus, EndpointInfo, HealthResponse, InfoResponse, PerformanceMetrics,
+        SystemMetrics,
     },
 };
 
@@ -32,30 +28,36 @@ use crate::{
     summary = "Get system health status",
     description = "Performs a comprehensive health check of the system including database connection, system metrics, and performance metrics."
 )]
-pub async fn health_check(State(db): State<DatabaseManager>) -> Result<Json<HealthResponse>, StatusCode> {
+pub async fn health_check(
+    State(db): State<DatabaseManager>,
+) -> Result<Json<HealthResponse>, StatusCode> {
     let start_time = Instant::now();
-    
+
     // Vérification de la base de données
     let db_status = check_database_health(&db).await;
-    
+
     // Métriques système
     let system_metrics = get_system_metrics();
-    
+
     // Métriques de performance
     let response_time = start_time.elapsed().as_millis() as u64;
     let performance_metrics = PerformanceMetrics {
         response_time_ms: response_time,
     };
-    
+
     let health_response = HealthResponse {
-        status: if db_status.connected { "healthy".to_string() } else { "unhealthy".to_string() },
+        status: if db_status.connected {
+            "healthy".to_string()
+        } else {
+            "unhealthy".to_string()
+        },
         timestamp: Utc::now(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         database: db_status,
         system: system_metrics,
         performance: performance_metrics,
     };
-    
+
     if health_response.status == "healthy" {
         Ok(Json(health_response))
     } else {
@@ -74,12 +76,14 @@ pub async fn health_check(State(db): State<DatabaseManager>) -> Result<Json<Heal
     summary = "Get light system health status",
     description = "Performs a quick health check focusing only on database connection and basic performance metrics."
 )]
-pub async fn health_light(State(db): State<DatabaseManager>) -> Result<Json<HealthResponse>, StatusCode> {
+pub async fn health_light(
+    State(db): State<DatabaseManager>,
+) -> Result<Json<HealthResponse>, StatusCode> {
     let start_time = Instant::now();
-    
+
     // Vérification de la base de données seulement
     let db_status = check_database_health(&db).await;
-    
+
     // Métriques système minimales
     let system_metrics = SystemMetrics {
         cpu_usage: 0.0, // Skip CPU check for speed
@@ -90,22 +94,26 @@ pub async fn health_light(State(db): State<DatabaseManager>) -> Result<Json<Heal
         disk_usage_percent: 0.0,
         uptime: System::uptime(),
     };
-    
+
     // Métriques de performance
     let response_time = start_time.elapsed().as_millis() as u64;
     let performance_metrics = PerformanceMetrics {
         response_time_ms: response_time,
     };
-    
+
     let health_response = HealthResponse {
-        status: if db_status.connected { "healthy".to_string() } else { "unhealthy".to_string() },
+        status: if db_status.connected {
+            "healthy".to_string()
+        } else {
+            "unhealthy".to_string()
+        },
         timestamp: Utc::now(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         database: db_status,
         system: system_metrics,
         performance: performance_metrics,
     };
-    
+
     if health_response.status == "healthy" {
         Ok(Json(health_response))
     } else {
@@ -128,7 +136,10 @@ pub async fn info() -> Json<InfoResponse> {
         name: env!("CARGO_PKG_NAME").to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         description: env!("CARGO_PKG_DESCRIPTION").to_string(),
-        authors: env!("CARGO_PKG_AUTHORS").split(':').map(|s| s.trim().to_string()).collect(),
+        authors: env!("CARGO_PKG_AUTHORS")
+            .split(':')
+            .map(|s| s.trim().to_string())
+            .collect(),
         endpoints: vec![
             EndpointInfo {
                 path: "/help/health".to_string(),
@@ -171,7 +182,7 @@ pub async fn ping() -> &'static str {
 /// Vérification de l'état de la base de données
 async fn check_database_health(db: &DatabaseManager) -> DatabaseStatus {
     let start_time = Instant::now();
-    
+
     match sqlx::query("SELECT 1 as test")
         .fetch_one(db.get_pool())
         .await
@@ -193,29 +204,27 @@ async fn check_database_health(db: &DatabaseManager) -> DatabaseStatus {
 fn get_system_metrics() -> SystemMetrics {
     // Utiliser new() d'abord pour les CPU
     let mut sys = System::new();
-    
+
     // Premier refresh pour initialiser
     sys.refresh_cpu_usage();
-    
+
     // Attendre l'intervalle minimum requis pour les CPU
     std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    
+
     // Deuxième refresh pour obtenir les vraies données CPU
     sys.refresh_cpu_usage();
     sys.refresh_memory(); // Refresh mémoire aussi
-    
+
     // CPU usage avec la méthode recommandée
     let cpu_usage = if !sys.cpus().is_empty() {
-        let total: f32 = sys.cpus().iter()
-            .map(|cpu| cpu.cpu_usage())
-            .sum();
+        let total: f32 = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum();
         total / sys.cpus().len() as f32
     } else {
         0.0
     };
-    
+
     let cpu_count = sys.cpus().len().max(1);
-    
+
     // Mémoire
     let memory_used = sys.used_memory() / 1024 / 1024; // Convert to MB
     let memory_total = sys.total_memory() / 1024 / 1024; // Convert to MB
@@ -224,7 +233,7 @@ fn get_system_metrics() -> SystemMetrics {
     } else {
         0.0
     };
-    
+
     // Disques
     let disks = Disks::new_with_refreshed_list();
     let disk_usage_percent = if let Some(disk) = disks.first() {
@@ -239,15 +248,18 @@ fn get_system_metrics() -> SystemMetrics {
     } else {
         0.0
     };
-    
+
     // Log pour debug (temporaire)
-    println!("Debug CPU: individual_cores=[{}], average={:.1}%", 
-             sys.cpus().iter()
-                .map(|cpu| format!("{:.1}", cpu.cpu_usage()))
-                .collect::<Vec<_>>()
-                .join(", "),
-             cpu_usage);
-    
+    println!(
+        "Debug CPU: individual_cores=[{}], average={:.1}%",
+        sys.cpus()
+            .iter()
+            .map(|cpu| format!("{:.1}", cpu.cpu_usage()))
+            .collect::<Vec<_>>()
+            .join(", "),
+        cpu_usage
+    );
+
     SystemMetrics {
         cpu_usage,
         cpu_count,
@@ -257,5 +269,4 @@ fn get_system_metrics() -> SystemMetrics {
         disk_usage_percent,
         uptime: System::uptime(),
     }
-} 
-
+}

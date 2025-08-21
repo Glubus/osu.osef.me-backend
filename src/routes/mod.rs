@@ -13,20 +13,24 @@
 //! 4. Utilisez `merge()` pour combiner les routes
 
 use crate::db::DatabaseManager;
-use axum::{routing::get, Router};
-use utoipa_swagger_ui::SwaggerUi;
+use axum::{Router, routing::get};
 use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 // Re-export all route modules here
-pub mod help;
 pub mod beatmap;
+pub mod help;
 
 #[derive(OpenApi)]
-#[openapi(paths(crate::handlers::help::health_check, crate::handlers::help::health_light,
-                crate::handlers::help::info, crate::handlers::help::ping))]
+#[openapi(paths(
+    crate::handlers::help::health_check,
+    crate::handlers::help::health_light,
+    crate::handlers::help::info,
+    crate::handlers::help::ping
+))]
 struct ApiDoc;
 
-pub fn create_router(db: DatabaseManager) -> Router<DatabaseManager> {
+pub fn create_router(db: DatabaseManager) -> Router {
     Router::new()
         // Page de status principale à la racine
         .route("/", get(crate::handlers::status::status_page))
@@ -34,9 +38,5 @@ pub fn create_router(db: DatabaseManager) -> Router<DatabaseManager> {
         .nest("/api", help::router())
         .nest("/api", beatmap::router())
         .merge(SwaggerUi::new("/api/swagger").url("/api-doc/openapi.json", ApiDoc::openapi()))
-        // Add your other route modules here
-        // Example:
-        // .nest("/api", user::router())
-        // .nest("/api", product::router())
-        .with_state(db)
+        .with_state(db.clone())
 }

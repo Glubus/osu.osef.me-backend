@@ -2,8 +2,8 @@
 //!
 //! Ce module configure les routes d'aide et de diagnostic de l'API.
 
-use axum::{routing::get, Router};
 use crate::{db::DatabaseManager, handlers::help};
+use axum::{Router, routing::get};
 
 /// Créer le routeur pour les routes d'aide
 pub fn router() -> Router<DatabaseManager> {
@@ -12,4 +12,4 @@ pub fn router() -> Router<DatabaseManager> {
         .route("/help/health-light", get(help::health_light))
         .route("/help/info", get(help::info))
         .route("/help/ping", get(help::ping))
-} 
+}

@@ -16,7 +16,11 @@ pub fn calculate_main_pattern(ssr: &Ssr) -> String {
     sorted_patterns.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     // Prendre les 2 premiers patterns
-    let top_2: Vec<_> = sorted_patterns.into_iter().take(2).map(|(pattern, _)| pattern).collect();
-    
+    let top_2: Vec<_> = sorted_patterns
+        .into_iter()
+        .take(2)
+        .map(|(pattern, _)| pattern)
+        .collect();
+
     serde_json::to_string(&top_2).unwrap()
 }

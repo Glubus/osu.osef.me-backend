@@ -56,7 +56,10 @@ impl DatabaseManager {
             .await?;
 
         self.pool = Some(pool);
-        tracing::info!("Connected to database with {} max connections", config.database.max_connections);
+        tracing::info!(
+            "Connected to database with {} max connections",
+            config.database.max_connections
+        );
         Ok(())
     }
 

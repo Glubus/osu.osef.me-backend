@@ -1,5 +1,5 @@
-use rosu_v2::model::beatmap::RankStatus;
 use om_fast_parser::structs::OsuParser;
+use rosu_v2::model::beatmap::RankStatus;
 
 pub fn rank_status_to_string(status: &RankStatus) -> String {
     match status {
@@ -16,7 +16,6 @@ pub fn rank_status_to_string(status: &RankStatus) -> String {
 pub fn build_file_path(beatmap_id: u32) -> String {
     format!("https://osu.ppy.sh/osu/{}", beatmap_id)
 }
-
 
 pub async fn osu_file_from_url(path_url: &str) -> Result<String, Box<dyn std::error::Error>> {
     let response = reqwest::get(path_url).await?;
