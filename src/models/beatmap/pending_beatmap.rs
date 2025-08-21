@@ -37,6 +37,7 @@ impl PendingBeatmap {
 
         Ok(result.rows_affected())
     }
+
     pub async fn delete_by_hash(pool: &PgPool, hash: &str) -> Result<u64, SqlxError> {
         let result = sqlx::query(
             r#"

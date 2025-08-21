@@ -37,6 +37,17 @@ impl BeatmapProcessor {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 info!("Thread de traitement des beatmaps démarré");
+                // Safety Measure : 
+                let processor = BeatmapProcessor::instance();
+                let maybe_pending = processor.pending_beatmap().await;
+                
+                if let Ok(Some(pending)) = maybe_pending {
+                    if let Some(db_ref) = processor.db.as_ref() {
+                        if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
+                            error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
+                        }
+                    }
+                }
                 
                 loop {
                     let processor = BeatmapProcessor::instance();
