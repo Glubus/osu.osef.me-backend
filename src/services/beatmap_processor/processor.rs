@@ -10,76 +10,53 @@ use crate::services::etterna_rating::calculate_etterna_rating;
 use crate::services::etterna_rating::osu_to_notes;
 use crate::services::osu_api::OsuApiService;
 use minacalc_rs::{Calc, Note};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
-use tracing::error;
+use tracing::{error, info};
+
+static PROCESSING_THREAD_RUNNING: AtomicBool = AtomicBool::new(false);
 
 impl BeatmapProcessor {
     pub fn start_processing_thread(&mut self) {
-        if self.is_processing {
-            return; // Thread déjà en cours
+        // Vérifier si le thread est déjà en cours
+        if PROCESSING_THREAD_RUNNING.load(Ordering::Relaxed) {
+            error!("Thread de traitement déjà en cours, impossible de relancer");
+            return;
         }
-        self.is_processing = true;
-        self.start_thread();
+
+        // Marquer le thread comme démarré
+        PROCESSING_THREAD_RUNNING.store(true, Ordering::Relaxed);
+        
+        // Démarrer le thread
+        self.spawn_processing_thread();
     }
 
-    fn start_thread(&self) {
+    fn spawn_processing_thread(&self) {
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
+                info!("Thread de traitement des beatmaps démarré");
+                
                 loop {
-                    // Récupérer le processor pour chaque traitement
                     let processor = BeatmapProcessor::instance();
-                    
-                    // Récupérer le pending_beatmap et libérer IMMÉDIATEMENT
                     let maybe_pending = processor.pending_beatmap().await;
-                    drop(processor);
                     
-                    match maybe_pending {
-                        Ok(Some(pending)) => {
-                            // Traiter le checksum avec un nouveau processor
-                            let processor = BeatmapProcessor::instance();
-                            let result = processor.process_single_checksum(pending.hash.clone()).await;
-                            drop(processor);
+                    if let Ok(Some(pending)) = maybe_pending {
+                        info!("Traitement du beatmap pending: {}", pending.hash);
                             
-                            match result {
-                                Ok(_) => {
-                                    // Supprimer le pending_beatmap avec un nouveau processor
-                                    let processor = BeatmapProcessor::instance();
-                                    if let Some(db_ref) = processor.db.as_ref() {
-                                        if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
-                                            error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
-                                        }
-                                    }
-                                    drop(processor);
-                                    tokio::time::sleep(Duration::from_millis(500)).await;
-                                }
-                                Err(e) => {
-                                    let processor = BeatmapProcessor::instance();
-                                    if let Some(db_ref) = processor.db.as_ref() {
-                                        if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
-                                            error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
-                                        }
-                                    }
-                                    drop(processor);
-                                    error!("Erreur lors du traitement du checksum {}: {}", pending.hash, e);
-                                }
+                        let result = processor.process_single_checksum(pending.hash.clone()).await;
+                        if let Some(db_ref) = processor.db.as_ref() {
+                            if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
+                                error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
                             }
                         }
-                        Ok(None) => {
-                            // Plus de pending_beatmap, arrêter le traitement
-                            let mut processor_guard = PROCESSOR.lock().unwrap();
-                            if let Some(processor_arc) = processor_guard.as_ref() {
-                                let mut processor = processor_arc.lock().unwrap();
-                                processor.is_processing = false;
-                            }
-                            drop(processor_guard);
-                            break;
-                        }
-                        Err(e) => {
-                            error!("Erreur lors de la récupération du pending_beatmap: {}", e);
-                            break;
-                        }
+                        info!("Beatmap traité avec succès: {}", pending.hash);
+                        // Break de 500ms quand on traite
+                        tokio::time::sleep(Duration::from_millis(500)).await;
+                    } else {
+                        // Pas de pending, break de 10 secondes
+                        tokio::time::sleep(Duration::from_secs(10)).await;
                     }
                 }
             });
@@ -163,6 +140,12 @@ impl BeatmapProcessor {
             Ok(_) => (),
             Err(e) => {
                 return Err(anyhow::anyhow!("Failed to insert MSD: {}", e));
+            }
+        }
+
+        if let Some(db_ref) = self.db.as_ref() {
+            if let Err(e) = PendingBeatmap::delete_by_hash(db_ref.get_pool(), &checksum).await {
+                error!("Impossible de supprimer pending_beatmap hash={}: {}", checksum, e);
             }
         }
         

@@ -46,6 +46,11 @@ async fn main() {
     // Initialize global BeatmapProcessor
     api::services::beatmap_processor::BeatmapProcessor::initialize(db.clone());
 
+    // Démarrer le thread de traitement des beatmaps
+    let mut processor = api::services::beatmap_processor::BeatmapProcessor::instance();
+    processor.start_processing_thread();
+    info!("Beatmap processing thread started");
+
     // Démarrer la tâche de calcul des métriques en arrière-plan
     start_background_metrics_task(db.clone(), config.clone()).await;
     info!("Background metrics task started (5-minute intervals)");

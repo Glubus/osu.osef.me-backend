@@ -9,20 +9,6 @@ use std::time::Duration;
 use tracing::{error, info};
 
 impl BeatmapProcessor {
-    pub async fn add_checksums(checksums: Vec<String>) -> Result<()> {
-        let processor = BeatmapProcessor::instance();
-        let checksums_to_add: Vec<String> = checksums.into_iter().take(50).collect();
-        if let Some(db) = &processor.db {
-            for checksum in checksums_to_add {
-                let _ = PendingBeatmap::insert(db.get_pool(), &checksum).await?;
-            }
-        }
-        if let Some(processor_arc) = BeatmapProcessor::instance_mut().as_ref() {
-            let mut processor = processor_arc.lock().unwrap();
-            processor.start_processing_thread();
-        }
-        Ok(())
-    }
 
     pub async fn pending_beatmap(&self) -> Result<Option<PendingBeatmap>> {
         if let Some(db) = &self.db {
@@ -52,7 +38,6 @@ impl BeatmapProcessor {
             let pending = match maybe_pending {
                 Some(p) => p,
                 None => {
-                    self.is_processing = false;
                     return Ok(());
                 }
             };

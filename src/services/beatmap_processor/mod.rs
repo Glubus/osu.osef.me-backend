@@ -10,14 +10,12 @@ static PROCESSOR: Mutex<Option<Arc<Mutex<BeatmapProcessor>>>> = Mutex::new(None)
 
 #[derive(Clone)]
 pub struct BeatmapProcessor {
-    is_processing: bool,
     db: Option<DatabaseManager>,
 }
 
 impl BeatmapProcessor {
     pub fn new(db: Option<DatabaseManager>) -> Self {
         Self {
-            is_processing: false,
             db,
         }
     }

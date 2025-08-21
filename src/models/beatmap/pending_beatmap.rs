@@ -37,6 +37,18 @@ impl PendingBeatmap {
 
         Ok(result.rows_affected())
     }
+    pub async fn delete_by_hash(pool: &PgPool, hash: &str) -> Result<u64, SqlxError> {
+        let result = sqlx::query(
+            r#"
+            delete from pending_beatmap where hash = $1
+            "#,
+        )
+        .bind(hash)
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected())
+    }
 
     pub async fn count(pool: &PgPool) -> Result<i64, SqlxError> {
         let count = sqlx::query_scalar::<_, i64>(

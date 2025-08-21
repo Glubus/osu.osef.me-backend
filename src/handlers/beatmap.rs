@@ -1,6 +1,6 @@
 use crate::db::DatabaseManager;
 use crate::models::beatmap::beatmap::{Beatmap, BeatmapWithMSD, BeatmapWithMSDShort, Filters};
-use crate::services::beatmap_processor::BeatmapProcessor;
+use crate::models::beatmap::pending_beatmap::PendingBeatmap;
 use anyhow::Result;
 use axum::{
     extract::{Json, Path, Query, State},
@@ -37,21 +37,14 @@ pub async fn batch_checksums_handler(
         "batch_checksums_handler: received {} checksums",
         payload.checksums.len()
     );
-    let result = BeatmapProcessor::add_checksums(payload.checksums).await;
-
-    match result {
-        Ok(_) => {
-            tracing::info!("batch_checksums_handler: enqueued successfully");
-            Ok(Json(BatchChecksumsResponse {
-                message: "Batch ajouté à la queue de traitement".to_string(),
-                status: "success".to_string(),
-            }))
-        }
-        Err(e) => {
-            tracing::error!("batch_checksums_handler: enqueue failed: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+    for checksum in payload.checksums {
+        let _ = PendingBeatmap::insert(_db.get_pool(), &checksum).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
+
+    Ok(Json(BatchChecksumsResponse {
+        message: "Batch ajouté à la queue de traitement".to_string(),
+        status: "success".to_string(),
+    }))
 }
 
 pub async fn beatmap_filters_handler(
