@@ -15,9 +15,7 @@ pub struct BeatmapProcessor {
 
 impl BeatmapProcessor {
     pub fn new(db: Option<DatabaseManager>) -> Self {
-        Self {
-            db,
-        }
+        Self { db }
     }
 
     pub fn instance() -> BeatmapProcessor {

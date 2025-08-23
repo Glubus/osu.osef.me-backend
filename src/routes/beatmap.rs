@@ -1,7 +1,7 @@
 use crate::db::DatabaseManager;
 use crate::handlers::beatmap::{
     batch_checksums_handler, beatmap_by_id_handler, beatmap_filters_handler,
-    beatmap_osu_file_handler,
+    beatmap_osu_file_handler, beatmapset_by_id_handler,
 };
 use axum::{
     Router,
@@ -14,4 +14,5 @@ pub fn router() -> Router<DatabaseManager> {
         .route("/beatmap/filters", get(beatmap_filters_handler))
         .route("/beatmap/{id}", get(beatmap_by_id_handler))
         .route("/beatmap/{id}/osu", get(beatmap_osu_file_handler))
-}
+        .route("/beatmapset/{id}", get(beatmapset_by_id_handler))
+    }

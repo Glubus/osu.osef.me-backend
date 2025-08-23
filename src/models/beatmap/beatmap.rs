@@ -34,6 +34,7 @@ pub struct BeatmapsetShort {
 pub struct MSDShort {
     pub id: Option<i32>,
     pub overall: Option<BigDecimal>,
+    pub main_pattern: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -234,7 +235,7 @@ impl BeatmapWithMSDShort {
         let mut query = String::from(
             "SELECT 
                 b.id, b.osu_id, b.difficulty, b.difficulty_rating, b.mode, b.status,
-                m.id as msd_id, m.overall,
+                m.id as msd_id, m.overall, m.main_pattern,
                 bs.id as beatmapset_id, bs.osu_id as beatmapset_osu_id, bs.artist, bs.title, bs.creator, bs.cover_url
              FROM beatmap b 
              JOIN msd m ON b.id = m.beatmap_id
@@ -346,18 +347,19 @@ impl BeatmapWithMSDShort {
             let msd = MSDShort {
                 id: row.try_get(6)?,
                 overall: row.try_get(7)?,
+                main_pattern: row.try_get(8)?,
             };
 
             // Construire le beatmapset si les données sont disponibles
-            let beatmapset = if let Ok(beatmapset_id) = row.try_get::<Option<i32>, _>(8) {
+            let beatmapset = if let Ok(beatmapset_id) = row.try_get::<Option<i32>, _>(9) {
                 if beatmapset_id.is_some() {
                     Some(BeatmapsetShort {
-                        id: row.try_get(8)?,
-                        osu_id: row.try_get(9)?,
-                        artist: row.try_get(10)?,
-                        title: row.try_get(11)?,
-                        creator: row.try_get(12)?,
-                        cover_url: row.try_get(13)?,
+                        id: row.try_get(9)?,
+                        osu_id: row.try_get(10)?,
+                        artist: row.try_get(11)?,
+                        title: row.try_get(12)?,
+                        creator: row.try_get(13)?,
+                        cover_url: row.try_get(14)?,
                     })
                 } else {
                     None

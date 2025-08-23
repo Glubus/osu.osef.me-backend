@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
-use rosu_v2::model::beatmap::BeatmapsetExtended;
+use rosu_v2::model::beatmap::BeatmapsetExtended as BmsetExtended;
 use serde::{Deserialize, Serialize};
-use sqlx::{Error as SqlxError, PgPool, Row};
+use sqlx::{Error as SqlxError, PgPool};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Beatmapset {
-    pub id: Option<i32>,
-    pub osu_id: i32,
+pub struct BeatmapsetExtended {
+    pub id: i32,
+    pub osu_id: Option<i32>,
     pub artist: String,
     pub artist_unicode: Option<String>,
     pub title: String,
@@ -32,7 +32,7 @@ pub trait Insert {
 }
 
 #[async_trait]
-impl Insert for Beatmapset {
+impl Insert for BeatmapsetExtended {
     async fn insert(&self, pool: &PgPool) -> Result<i32, SqlxError> {
         let query = sqlx::query!(
             r#"
@@ -82,11 +82,11 @@ impl Insert for Beatmapset {
     }
 }
 
-impl From<BeatmapsetExtended> for Beatmapset {
-    fn from(beatmapset: BeatmapsetExtended) -> Self {
+impl From<BmsetExtended> for BeatmapsetExtended {
+    fn from(beatmapset: BmsetExtended) -> Self {
         Self {
-            id: None,
-            osu_id: beatmapset.mapset_id as i32,
+            id: 0,
+            osu_id: Some(beatmapset.mapset_id as i32),
             artist: beatmapset.artist,
             artist_unicode: beatmapset.artist_unicode,
             title: beatmapset.title,
@@ -107,7 +107,7 @@ impl From<BeatmapsetExtended> for Beatmapset {
     }
 }
 
-impl Beatmapset {
+impl BeatmapsetExtended {
     /// Insère un beatmapset dans la base de données
     pub async fn insert_into_db(&self, pool: &PgPool) -> Result<i32, SqlxError> {
         self.insert(pool).await
@@ -115,8 +115,8 @@ impl Beatmapset {
 
     /// Récupère un beatmapset par son ID
     pub async fn find_by_id(pool: &PgPool, id: i32) -> Result<Option<Self>, SqlxError> {
-        let query = sqlx::query_as_unchecked!(
-            Beatmapset,
+        let query = sqlx::query_as!(
+            Self,
             r#"
             SELECT 
                 id, osu_id, artist, artist_unicode, title, title_unicode, creator, source,
@@ -133,8 +133,8 @@ impl Beatmapset {
 
     /// Récupère un beatmapset par son osu_id
     pub async fn find_by_osu_id(pool: &PgPool, osu_id: i32) -> Result<Option<Self>, SqlxError> {
-        let query = sqlx::query_as_unchecked!(
-            Beatmapset,
+        let query = sqlx::query_as!(
+            Self,
             r#"
             SELECT 
                 id, osu_id, artist, artist_unicode, title, title_unicode, creator, source,
@@ -174,8 +174,8 @@ impl Beatmapset {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
 
-        let query = sqlx::query_as_unchecked!(
-            Beatmapset,
+        let query = sqlx::query_as!(
+            Self,
             r#"
             SELECT 
                 id, osu_id, artist, artist_unicode, title, title_unicode, creator, source,
@@ -208,8 +208,8 @@ impl Beatmapset {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
 
-        let query = sqlx::query_as_unchecked!(
-            Beatmapset,
+        let query = sqlx::query_as!(
+            Self,
             r#"
             SELECT 
                 id, osu_id, artist, artist_unicode, title, title_unicode, creator, source,

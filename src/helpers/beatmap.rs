@@ -1,4 +1,3 @@
-use om_fast_parser::structs::OsuParser;
 use rosu_v2::model::beatmap::RankStatus;
 
 pub fn rank_status_to_string(status: &RankStatus) -> String {

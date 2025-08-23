@@ -27,7 +27,7 @@ impl BeatmapProcessor {
 
         // Marquer le thread comme démarré
         PROCESSING_THREAD_RUNNING.store(true, Ordering::Relaxed);
-        
+
         // Démarrer le thread
         self.spawn_processing_thread();
     }
@@ -37,34 +37,46 @@ impl BeatmapProcessor {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 info!("Thread de traitement des beatmaps démarré");
-                // Safety Measure : 
+                // Safety Measure :
                 let processor = BeatmapProcessor::instance();
                 let maybe_pending = processor.pending_beatmap().await;
-                
+
                 if let Ok(Some(pending)) = maybe_pending {
                     if let Some(db_ref) = processor.db.as_ref() {
-                        if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
-                            error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
+                        if let Err(e) =
+                            PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await
+                        {
+                            error!(
+                                "Impossible de supprimer pending_beatmap id={}: {}",
+                                pending.id, e
+                            );
                         }
                     }
                 }
-                
+
                 loop {
                     let processor = BeatmapProcessor::instance();
                     let maybe_pending = processor.pending_beatmap().await;
-                    
+
                     if let Ok(Some(pending)) = maybe_pending {
                         info!("Traitement du beatmap pending: {}", pending.hash);
-                            
-                        let result = processor.process_single_checksum(pending.hash.clone()).await;
-                        
+
+                        let result = processor
+                            .process_single_checksum(pending.hash.clone())
+                            .await;
+
                         // Toujours supprimer le pending, même en cas d'erreur
                         if let Some(db_ref) = processor.db.as_ref() {
-                            if let Err(e) = PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await {
-                                error!("Impossible de supprimer pending_beatmap id={}: {}", pending.id, e);
+                            if let Err(e) =
+                                PendingBeatmap::delete_by_id(db_ref.get_pool(), pending.id).await
+                            {
+                                error!(
+                                    "Impossible de supprimer pending_beatmap id={}: {}",
+                                    pending.id, e
+                                );
                             }
                         }
-                        
+
                         match result {
                             Ok(_) => {
                                 info!("Beatmap traité avec succès: {}", pending.hash);
@@ -72,7 +84,10 @@ impl BeatmapProcessor {
                                 tokio::time::sleep(Duration::from_millis(500)).await;
                             }
                             Err(e) => {
-                                error!("Erreur lors du traitement du checksum {}: {}", pending.hash, e);
+                                error!(
+                                    "Erreur lors du traitement du checksum {}: {}",
+                                    pending.hash, e
+                                );
                                 // Pas de break en cas d'erreur, on continue directement
                             }
                         }
@@ -106,14 +121,13 @@ impl BeatmapProcessor {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Database not initialized"))?;
 
-
         if self.is_already_processed(checksum.clone()).await? {
             return Err(anyhow::anyhow!(
                 "Checksum has already been processed: {}",
                 checksum
             ));
         }
-        
+
         let osu_api = OsuApiService::instance();
         let beatmap_extended = osu_api.beatmap_by_checksum(checksum.clone()).await?;
 
@@ -133,12 +147,12 @@ impl BeatmapProcessor {
         let mut msd: MSD = self.calculate_msd(notes).await?;
 
         let beatmapset_id = match tokio::time::timeout(
-            std::time::Duration::from_secs(30), // 30 secondes de timeout   
-            beatmapset.insert_into_db(db_ref.get_pool())
-        ).await {
-            Ok(Ok(id)) => {
-                id
-            }
+            std::time::Duration::from_secs(30), // 30 secondes de timeout
+            beatmapset.insert_into_db(db_ref.get_pool()),
+        )
+        .await
+        {
+            Ok(Ok(id)) => id,
             Ok(Err(e)) => {
                 return Err(anyhow::anyhow!("Failed to insert beatmapset: {}", e));
             }
@@ -146,17 +160,15 @@ impl BeatmapProcessor {
                 return Err(anyhow::anyhow!("Timeout inserting beatmapset"));
             }
         };
-        
+
         beatmap.beatmapset_id = Some(beatmapset_id);
         let beatmap_id = match beatmap.insert_into_db(db_ref.get_pool()).await {
-            Ok(id) => {
-                id
-            }
+            Ok(id) => id,
             Err(e) => {
                 return Err(anyhow::anyhow!("Failed to insert beatmap: {}", e));
             }
         };
-        
+
         msd.beatmap_id = Some(beatmap_id);
         match msd.insert_into_db(db_ref.get_pool()).await {
             Ok(_) => (),
@@ -167,10 +179,13 @@ impl BeatmapProcessor {
 
         if let Some(db_ref) = self.db.as_ref() {
             if let Err(e) = PendingBeatmap::delete_by_hash(db_ref.get_pool(), &checksum).await {
-                error!("Impossible de supprimer pending_beatmap hash={}: {}", checksum, e);
+                error!(
+                    "Impossible de supprimer pending_beatmap hash={}: {}",
+                    checksum, e
+                );
             }
         }
-        
+
         Ok(())
     }
 }

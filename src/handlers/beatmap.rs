@@ -1,5 +1,6 @@
 use crate::db::DatabaseManager;
 use crate::models::beatmap::beatmap::{Beatmap, BeatmapWithMSD, BeatmapWithMSDShort, Filters};
+use crate::models::beatmap::extended::BeatmapsetCompleteExtended;
 use crate::models::beatmap::pending_beatmap::PendingBeatmap;
 use anyhow::Result;
 use axum::{
@@ -38,7 +39,9 @@ pub async fn batch_checksums_handler(
         payload.checksums.len()
     );
     for checksum in payload.checksums {
-        let _ = PendingBeatmap::insert(_db.get_pool(), &checksum).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        let _ = PendingBeatmap::insert(_db.get_pool(), &checksum)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
 
     Ok(Json(BatchChecksumsResponse {
@@ -136,4 +139,20 @@ pub async fn beatmap_osu_file_handler(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(response)
+}
+
+
+pub async fn beatmapset_by_id_handler(
+    State(db): State<DatabaseManager>,
+    Path(id): Path<i32>,
+) -> Result<Json<BeatmapsetCompleteExtended>, StatusCode> {
+    let pool = db.get_pool();
+    let beatmapset = BeatmapsetCompleteExtended::find_by_beatmapset_osu_id(pool, id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match beatmapset {
+        Some(beatmapset) => Ok(Json(beatmapset)),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }

@@ -9,7 +9,6 @@ use std::time::Duration;
 use tracing::{error, info};
 
 impl BeatmapProcessor {
-
     pub async fn pending_beatmap(&self) -> Result<Option<PendingBeatmap>> {
         if let Some(db) = &self.db {
             match PendingBeatmap::oldest(db.get_pool()).await {
@@ -63,7 +62,10 @@ impl BeatmapProcessor {
                     tokio::time::sleep(Duration::from_millis(500)).await;
                 }
                 Err(e) => {
-                    error!("Erreur lors du traitement du checksum {}: {}", pending.hash, e);
+                    error!(
+                        "Erreur lors du traitement du checksum {}: {}",
+                        pending.hash, e
+                    );
                 }
             }
         }
