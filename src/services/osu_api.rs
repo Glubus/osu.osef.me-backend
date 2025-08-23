@@ -36,4 +36,9 @@ impl OsuApiService {
         let beatmap = self.client.beatmap().checksum(checksum).await?;
         Ok(beatmap)
     }
+
+    pub async fn beatmapset_by_osu_id(&self, osu_id: i32) -> Result<BeatmapsetExtended> {
+        let beatmapset = self.client.beatmapset(osu_id as u32).await?;
+        Ok(beatmapset)
+    }
 }
