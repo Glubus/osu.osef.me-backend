@@ -1,8 +1,6 @@
 use anyhow::Result;
 use rosu_v2::prelude::*;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, Once};
-use tracing::debug;
+use std::sync::{Arc, Mutex};
 
 static API_SERVICE: Mutex<Option<Arc<OsuApiService>>> = Mutex::new(None);
 

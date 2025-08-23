@@ -20,6 +20,7 @@ use utoipa_swagger_ui::SwaggerUi;
 // Re-export all route modules here
 pub mod beatmap;
 pub mod help;
+pub mod skins;
 
 #[derive(OpenApi)]
 #[openapi(paths(
@@ -37,6 +38,7 @@ pub fn create_router(db: DatabaseManager) -> Router {
         // Routes API
         .nest("/api", help::router())
         .nest("/api", beatmap::router())
+        .nest("/api", skins::router())
         .merge(SwaggerUi::new("/api/swagger").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .with_state(db.clone())
 }

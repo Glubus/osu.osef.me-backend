@@ -1,6 +1,5 @@
 use minacalc_rs::{Calc, MsdForAllRates, Note};
 use om_fast_parser::{HitObjectType, OsuParser};
-use std::path::Path;
 
 /// Converts X position of a note to bitflag for 4K
 fn get_columns(x: i32) -> Result<u32, String> {

@@ -6,4 +6,5 @@
 pub mod beatmap;
 pub mod help;
 pub mod ratings;
+pub mod skins;
 pub mod status;

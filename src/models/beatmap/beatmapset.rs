@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use rosu_v2::model::beatmap::BeatmapsetExtended;
 use serde::{Deserialize, Serialize};
-use sqlx::{Error as SqlxError, PgPool, Row};
+use sqlx::{Error as SqlxError, PgPool};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Beatmapset {
