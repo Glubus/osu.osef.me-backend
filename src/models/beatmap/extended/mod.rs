@@ -88,8 +88,9 @@ pub struct BeatmapsetCompleteExtended {
 
 
 impl BeatmapsetCompleteExtended {
-    pub async fn find_by_beatmapset_osu_id(pool: &PgPool, beatmapset_id: i32) -> Result<Option<Self>, SqlxError> {
-        let beatmapset = BeatmapsetExtended::find_by_osu_id(pool, beatmapset_id).await?;
+    pub async fn find_by_beatmapset_osu_id(pool: &PgPool, beatmapset_osu_id: i32) -> Result<Option<Self>, SqlxError> {
+        let beatmapset = BeatmapsetExtended::find_by_osu_id(pool, beatmapset_osu_id).await?;
+        let beatmapset_id = beatmapset.as_ref().map(|b| b.id).unwrap_or(0);
         let beatmap = BeatmapCompleteExtended::find_by_beatmapset_id(pool, beatmapset_id).await?;
 
         Ok(Some(Self { beatmapset, beatmap }))
