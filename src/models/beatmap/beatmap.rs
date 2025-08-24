@@ -249,8 +249,8 @@ impl BeatmapWithMSDShort {
             if !search_term.is_empty() {
                 param_count += 1;
                 conditions.push(format!(
-                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${})",
-                    param_count, param_count
+                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${} OR bs.artist ILIKE ${} OR bs.title ILIKE ${} OR bs.creator ILIKE ${})",
+                    param_count, param_count, param_count, param_count, param_count
                 ));
             }
         }
@@ -393,8 +393,8 @@ impl BeatmapWithMSDShort {
             if !search_term.is_empty() {
                 param_count += 1;
                 conditions.push(format!(
-                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${})",
-                    param_count, param_count
+                    "(b.difficulty ILIKE ${} OR b.status ILIKE ${} OR bs.artist ILIKE ${} OR bs.title ILIKE ${} OR bs.creator ILIKE ${})",
+                    param_count, param_count, param_count, param_count, param_count
                 ));
             }
         }
