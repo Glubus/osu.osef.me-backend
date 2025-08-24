@@ -70,6 +70,7 @@ reqwest = { version = "0.12.20", features = ["json"] }
 rosu-v2 = "0.11.0"
 minacalc-rs = "0.1.3"
 om_fast_parser = "0.1.0"
+axum-extra = "0.10.1"
 
 [dev-dependencies]
 tokio-test = "0.4"
