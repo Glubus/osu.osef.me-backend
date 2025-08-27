@@ -42,7 +42,7 @@ impl BeatmapProcessor {
             return Err(anyhow::anyhow!("Beatmap not allowed"));
         }
 
-        let mut beatmapset = BeatmapsetExtended::from(*beatmap_extended.mapset.clone().unwrap());
+        let mut beatmapset = BeatmapsetExtended::from(*beatmap_extended.mapset.clone().map_or(Err(anyhow::anyhow!("Beatmapset not found")), |b| Ok(b))?);
         let mut beatmap = BeatmapExtended::from(beatmap_extended);
 
         let osu_file = osu_file_from_url(&beatmap.file_path).await.map_err(|e| anyhow::anyhow!("Failed to get osu file: {}", e))?;

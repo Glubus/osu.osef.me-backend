@@ -17,7 +17,7 @@ impl BeatmapProcessor {
         self.spawn_processing_thread();
     }
 
-    fn spawn_processing_thread(&self) {
+    fn spawn_processing_thread(&self) {    
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
