@@ -81,6 +81,16 @@ fn build_query(filters: &Filters) -> (String, usize) {
     
     query.push_str(" ORDER BY bs.id, b.id");
 
+    // Ajouter la pagination
+    let per_page = filters.per_page.unwrap_or(10);
+    let page = filters.page.unwrap_or(1);
+    let offset = (page - 1) * per_page;
+    
+    param_count += 1;
+    query.push_str(&format!(" LIMIT ${}", param_count));
+    param_count += 1;
+    query.push_str(&format!(" OFFSET ${}", param_count));
+
     (query, param_count)
 }
 
@@ -118,6 +128,14 @@ fn bind_params<'q>(mut query_builder: sqlx::query::Query<'q, sqlx::Postgres, sql
             query_builder = query_builder.bind(pattern_search);
         }
     }
+
+    // Lier les paramètres de pagination
+    let per_page = filters.per_page.unwrap_or(10);
+    let page = filters.page.unwrap_or(1);
+    let offset = (page - 1) * per_page;
+    
+    query_builder = query_builder.bind(per_page as i64);
+    query_builder = query_builder.bind(offset as i64);
 
     query_builder
 }
