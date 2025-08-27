@@ -1,4 +1,10 @@
--- Table MSD (Map Specific Difficulty)
+-- Migration: Create msd table
+-- Created: 2025-08-26
+-- Author: Osef
+-- Description: Table for stocking MSD (Map Specific Difficulty)
+-- Version: 1.0.0
+
+-- Table MSD
 create table if not exists msd (
     id integer GENERATED ALWAYS AS IDENTITY primary key,
     beatmap_id integer references beatmap(id) on delete cascade,
@@ -24,8 +30,8 @@ create table if not exists msd (
     constraint valid_technical check (technical >= 0),
     constraint valid_rate check (rate > 0)
 );
-
--- Indexes pour la table MSD
+    
+-- Indexes -- 
 create index if not exists idx_msd_beatmap_id on msd(beatmap_id);
 create index if not exists idx_msd_overall on msd(overall);
 create index if not exists idx_msd_stream on msd(stream);

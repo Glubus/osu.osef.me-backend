@@ -1,4 +1,4 @@
-use rosu_v2::model::beatmap::RankStatus;
+use rosu_v2::model::{GameMode, beatmap::RankStatus};
 
 pub fn rank_status_to_string(status: &RankStatus) -> String {
     match status {
@@ -20,4 +20,16 @@ pub async fn osu_file_from_url(path_url: &str) -> Result<String, Box<dyn std::er
     let response = reqwest::get(path_url).await?;
     let body = response.text().await?;
     Ok(body)
+}
+
+pub async fn is_allowed_beatmap(mode: GameMode, cs: f32) -> bool {
+    if mode != GameMode::Mania {
+        return false;
+    }
+
+    if cs != 4.0 {
+        return false;
+    }
+
+    true
 }

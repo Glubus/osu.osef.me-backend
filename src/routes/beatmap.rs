@@ -1,18 +1,30 @@
-use crate::db::DatabaseManager;
-use crate::handlers::beatmap::{
-    batch_checksums_handler, beatmap_by_id_handler, beatmap_filters_handler,
-    beatmap_osu_file_handler, beatmapset_by_id_handler,
-};
+//! # Beatmap Routes Module
+//!
+//! Ce module configure les routes de beatmap.
+
+use crate::{db::DatabaseManager, handlers};
 use axum::{
     Router,
     routing::{get, post},
 };
 
-pub fn router() -> Router<DatabaseManager> {
+pub fn router(db: DatabaseManager) -> Router<DatabaseManager> {
     Router::new()
-        .route("/beatmap/batch", post(batch_checksums_handler))
-        .route("/beatmap/filters", get(beatmap_filters_handler))
-        .route("/beatmap/{id}", get(beatmap_by_id_handler))
-        .route("/beatmap/{id}/osu", get(beatmap_osu_file_handler))
-        .route("/beatmapset/{id}", get(beatmapset_by_id_handler))
-    }
+        .route(
+            "/beatmap/batch",
+            post(handlers::beatmap::batch::checksums::handler),
+        )
+        .route(
+            "/beatmap/by_osu_id",
+            post(handlers::beatmap::post::by_beatmap_id::handler),
+        )
+        .route(
+            "/beatmap",
+            get(handlers::beatmap::get::filtered::handler),
+        )
+        .route(
+            "/beatmapset/{id}",
+            get(handlers::beatmap::get::by_id_extended::handler),
+        )
+        .with_state(db)
+}

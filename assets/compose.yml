@@ -1,4 +1,4 @@
-name: template-db
+name: template-api
 
 services:
   postgres:
@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: osu
+      POSTGRES_DB: template_db
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +17,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
 
 volumes:
   postgres_data:
