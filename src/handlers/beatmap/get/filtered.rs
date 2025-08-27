@@ -19,7 +19,7 @@ pub async fn handler(
 ) -> Result<Json<BeatmapFiltersResponse>, StatusCode> {
     let pool = db.get_pool();
 
-    // Pagination
+    // Pagination - utiliser les paramètres des filtres
     let per_page = query.per_page.unwrap_or(10);
     let page = query.page.unwrap_or(1);
 
