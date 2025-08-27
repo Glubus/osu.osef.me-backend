@@ -1,5 +1,8 @@
 -- Migration: Create failed_query table
--- Created: 2025-01-20
+-- Created: 2025-08-26
+-- Author: Osef
+-- Description: Table for stocking failed queries
+-- Version: 1.0.0
 
 CREATE TABLE failed_query (
     id integer GENERATED ALWAYS AS IDENTITY primary key,
@@ -7,8 +10,6 @@ CREATE TABLE failed_query (
     created_at timestamp DEFAULT now()
 );
 
--- Index pour optimiser les recherches par hash
+-- Index -- 
 CREATE INDEX idx_failed_query_hash ON failed_query(hash);
-
--- Index pour optimiser les recherches par date
 CREATE INDEX idx_failed_query_created_at ON failed_query(created_at);

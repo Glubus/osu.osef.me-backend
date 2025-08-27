@@ -35,8 +35,8 @@ impl OsuApiService {
         Ok(beatmap)
     }
 
-    pub async fn beatmapset_by_osu_id(&self, osu_id: i32) -> Result<BeatmapsetExtended> {
-        let beatmapset = self.client.beatmapset(osu_id as u32).await?;
-        Ok(beatmapset)
+    pub async fn beatmap_by_osu_id(&self, osu_id: i32) -> Result<BeatmapExtended> {
+        let beatmap = self.client.beatmap().map_id(osu_id as u32).await?;
+        Ok(beatmap)
     }
 }

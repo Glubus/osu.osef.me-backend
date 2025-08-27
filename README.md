@@ -29,8 +29,8 @@ cd template-axum-sqlx-api
 
 2. Configurer la base de données :
    - Créer une base de données PostgreSQL
-   - Copier `assets/env.example` vers `.env`
-   - Modifier les paramètres de connexion dans `.env`
+   - Copier `config.toml.example` vers `config.toml`
+   - Modifier les paramètres de connexion dans `config.toml`
 
 ## Développement
 
@@ -85,8 +85,8 @@ La documentation OpenAPI est disponible à `http://localhost:3000/api/swagger`.
 │   ├── models/        # Modèles de données
 │   └── main.rs        # Point d'entrée
 ├── tests/             # Tests d'intégration
-├── assets/           # Ressources (compose.yml, env.example, etc.)
-├── .env              # Configuration (variables d'environnement)
+├── assets/           # Ressources (compose.yml, etc.)
+├── config.toml        # Configuration
 └── Cargo.toml         # Dépendances
 ```
 

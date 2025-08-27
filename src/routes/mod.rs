@@ -20,12 +20,10 @@ use utoipa_swagger_ui::SwaggerUi;
 // Re-export all route modules here
 pub mod beatmap;
 pub mod help;
-pub mod skins;
-
 #[derive(OpenApi)]
 #[openapi(paths(
-    crate::handlers::help::health_check,
-    crate::handlers::help::health_light,
+    crate::handlers::help::health::full::health_check,
+    crate::handlers::help::health::light::health_light,
     crate::handlers::help::info,
     crate::handlers::help::ping
 ))]
@@ -34,11 +32,14 @@ struct ApiDoc;
 pub fn create_router(db: DatabaseManager) -> Router {
     Router::new()
         // Page de status principale à la racine
-        .route("/", get(crate::handlers::status::status_page))
+        .route("/", get(crate::handlers::status::page::status_page))
         // Routes API
+        .nest("/api", beatmap::router(db.clone()))
         .nest("/api", help::router())
-        .nest("/api", beatmap::router())
-        .nest("/api", skins::router())
         .merge(SwaggerUi::new("/api/swagger").url("/api-doc/openapi.json", ApiDoc::openapi()))
-        .with_state(db.clone())
+        // Add your other route modules here
+        // Example:
+        // .nest("/api", user::router())
+        // .nest("/api", product::router())
+        .with_state(db)
 }

@@ -1,3 +1,9 @@
+-- Migration: Create beatmapset and beatmap tables
+-- Created: 2025-08-26
+-- Author: Osef
+-- Description: Tables for stocking beatmaps
+-- Version: 1.0.0
+
 -- Table beatmapset
 create table if not exists beatmapset (
     id integer GENERATED ALWAYS AS IDENTITY primary key,
@@ -50,13 +56,13 @@ create table if not exists beatmap (
 );
 
 
--- Indexes pour la table beatmapset
+-- Indexes -- 
 create index if not exists idx_beatmapset_artist on beatmapset(artist);
 create index if not exists idx_beatmapset_title on beatmapset(title);
 create index if not exists idx_beatmapset_creator on beatmapset(creator);
 create index if not exists idx_beatmapset_created_at on beatmapset(created_at);
 
--- Indexes pour la table beatmap
+-- Indexes -- 
 create index if not exists idx_beatmap_beatmapset_id on beatmap(beatmapset_id);
 create index if not exists idx_beatmap_difficulty on beatmap(difficulty);
 create index if not exists idx_beatmap_difficulty_rating on beatmap(difficulty_rating);

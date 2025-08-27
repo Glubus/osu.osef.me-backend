@@ -1,4 +1,10 @@
--- Add migration script here
+-- Migration: Create skins table
+-- Created: 2025-08-26
+-- Author: Osef
+-- Description: Table for stocking skins
+-- Version: 1.0.0
+
+-- Table skins
 create table skins (
     id integer GENERATED ALWAYS AS IDENTITY primary key,
     name text not null,
@@ -12,6 +18,7 @@ create table skins (
     tags text[] not null -- tags for the skin
 );
 
+-- Indexes -- 
 create index if not exists idx_skins_created_at on skins(created_at);
 create index if not exists idx_skins_note_type on skins(note_type);
 create index if not exists idx_skins_tags on skins using gin(tags);
