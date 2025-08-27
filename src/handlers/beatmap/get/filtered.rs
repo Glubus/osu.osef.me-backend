@@ -20,7 +20,7 @@ pub async fn handler(
     let pool = db.get_pool();
 
     // Pagination
-    let per_page = query.per_page.unwrap_or(10);
+    let per_page = 10;
     let page = query.page.unwrap_or(1);
 
     let total = BeatmapsetCompleteShort::count_by_filters(pool, &query)
