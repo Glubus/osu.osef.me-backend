@@ -3,9 +3,10 @@ pub mod count;
 pub mod delete;
 pub mod insert;
 pub mod oldest;
-
+pub mod position_by_osu_id;
 pub use bulk_insert::*;
 pub use count::*;
 pub use delete::*;
 pub use insert::*;
 pub use oldest::*;
+pub use position_by_osu_id::*;

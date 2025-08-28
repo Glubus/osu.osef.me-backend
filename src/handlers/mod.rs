@@ -10,3 +10,4 @@
 pub mod beatmap;
 pub mod help;
 pub mod status;
+pub mod pending_beatmap;

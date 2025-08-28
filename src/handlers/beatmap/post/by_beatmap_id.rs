@@ -29,9 +29,11 @@ pub async fn handler(
         .beatmap_by_osu_id(payload.id)
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?;
+    println!("DEBUG: Beatmap: {:?}", payload.id);
     let _ = PendingBeatmap::insert(
         db.get_pool(),
         &beatmap.checksum.ok_or(StatusCode::BAD_REQUEST)?,
+        Some(payload.id),
     )
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

@@ -20,6 +20,7 @@ use utoipa_swagger_ui::SwaggerUi;
 // Re-export all route modules here
 pub mod beatmap;
 pub mod help;
+pub mod pending_beatmap;
 #[derive(OpenApi)]
 #[openapi(paths(
     crate::handlers::help::health::full::health_check,
@@ -36,6 +37,7 @@ pub fn create_router(db: DatabaseManager) -> Router {
         // Routes API
         .nest("/api", beatmap::router(db.clone()))
         .nest("/api", help::router())
+        .nest("/api", pending_beatmap::router(db.clone()))
         .merge(SwaggerUi::new("/api/swagger").url("/api-doc/openapi.json", ApiDoc::openapi()))
         // Add your other route modules here
         // Example:

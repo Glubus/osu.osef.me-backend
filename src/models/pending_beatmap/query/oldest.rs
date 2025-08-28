@@ -5,7 +5,7 @@ pub async fn oldest(pool: &PgPool) -> Result<Option<PendingBeatmap>, SqlxError> 
     let row = sqlx::query_as!(
         PendingBeatmap,
         r#"
-        SELECT id, hash, created_at
+        SELECT id, hash, osu_id, created_at
         FROM pending_beatmap
         ORDER BY created_at ASC, id ASC
         LIMIT 1
