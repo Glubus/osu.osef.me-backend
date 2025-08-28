@@ -48,6 +48,11 @@ fn build_query(filters: &Filters) -> (String, usize) {
         }
     }
 
+    // Vérifier que m.overall existe avant d'appliquer les filtres
+    if filters.overall_min.is_some() || filters.overall_max.is_some() {
+        conditions.push("m.overall IS NOT NULL".to_string());
+    }
+
     if let Some(overall_min) = filters.overall_min {
         param_count += 1;
         conditions.push(format!("m.overall >= ${}", param_count));
@@ -58,22 +63,35 @@ fn build_query(filters: &Filters) -> (String, usize) {
         conditions.push(format!("m.overall <= ${}", param_count));
     }
 
+    // Vérifier que le pattern sélectionné est valide et que m existe
     if let Some(pattern) = &filters.selected_pattern {
         if !pattern.is_empty() {
-            if let Some(pattern_min) = filters.pattern_min {
-                param_count += 1;
-                conditions.push(format!("m.{} >= ${}", pattern, param_count));
-            }
-            if let Some(pattern_max) = filters.pattern_max {
-                param_count += 1;
-                conditions.push(format!("m.{} <= ${}", pattern, param_count));
-            }
+            // Vérifier que le pattern est une colonne valide
+            let valid_patterns = ["stream", "jumpstream", "handstream", "stamina", "jackspeed", "chordjack", "technical"];
+            if valid_patterns.contains(&pattern.as_str()) {
+                conditions.push("m.id IS NOT NULL".to_string());
+                
+                if let Some(pattern_min) = filters.pattern_min {
+                    param_count += 1;
+                    conditions.push(format!("m.{} >= ${}", pattern, param_count));
+                }
+                if let Some(pattern_max) = filters.pattern_max {
+                    param_count += 1;
+                    conditions.push(format!("m.{} <= ${}", pattern, param_count));
+                }
 
-            param_count += 1;
-            conditions.push(format!("m.main_pattern ILIKE ${}", param_count));
+                param_count += 1;
+                conditions.push(format!("m.main_pattern ILIKE ${}", param_count));
+            }
         }
     }
-    conditions.push("m.rate = 1.0".to_string());
+
+    // Ajouter la condition rate = 1.0 seulement si on filtre par MSD
+    if filters.overall_min.is_some() || filters.overall_max.is_some() || 
+       (filters.selected_pattern.is_some() && !filters.selected_pattern.as_ref().unwrap().is_empty()) {
+        conditions.push("m.rate = 1.0".to_string());
+    }
+
     if !conditions.is_empty() {
         query.push_str(" WHERE ");
         query.push_str(&conditions.join(" AND "));
