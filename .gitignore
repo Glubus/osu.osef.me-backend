@@ -43,5 +43,4 @@ htmlcov/
 
 
 # Scripts
-push-all.sh
 *.sh
