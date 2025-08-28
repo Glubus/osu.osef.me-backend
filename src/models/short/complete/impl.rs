@@ -1,4 +1,4 @@
-use crate::models::short::complete::query::{count_by_filters, find_by_beatmapset_id, find_by_beatmapset_osu_id, find_by_filters};
+use crate::models::short::complete::query::{count_by_filters, find_by_beatmapset_id, find_by_beatmapset_osu_id, find_by_filters, random_by_filters};
 use crate::models::short::complete::types::{BeatmapCompleteShort, BeatmapsetCompleteShort};
 use crate::models::Filters;
 use sqlx::PgPool;
@@ -32,5 +32,12 @@ impl BeatmapsetCompleteShort {
         filters: &Filters,
     ) -> Result<i64, sqlx::Error> {
         count_by_filters(pool, filters).await
+    }
+
+    pub async fn random_by_filters(
+        pool: &PgPool,
+        filters: &Filters,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        random_by_filters(pool, filters).await
     }
 }
