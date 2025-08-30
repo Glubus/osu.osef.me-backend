@@ -30,5 +30,9 @@ pub fn router(db: DatabaseManager) -> Router<DatabaseManager> {
             "/beatmapset/{id}",
             get(handlers::beatmap::get::by_id_extended::handler),
         )
+        .route(
+            "/beatmap/count",
+            get(handlers::beatmap::get::count::handler),
+        )
         .with_state(db)
 }
