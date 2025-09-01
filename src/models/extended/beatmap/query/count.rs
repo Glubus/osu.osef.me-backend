@@ -35,7 +35,6 @@ pub async fn get_all_stats(pool: &PgPool) -> Result<(Option<i64>, Option<i64>, s
             WHERE rate = 1.0 AND main_pattern IS NOT NULL
             GROUP BY main_pattern
             ORDER BY count DESC
-            LIMIT 10
         )
         SELECT 
             s.beatmap_count,
