@@ -8,8 +8,7 @@ use sysinfo::{Disks, System};
 pub async fn check_database_health(db: &DatabaseManager) -> DatabaseStatus {
     let start_time = Instant::now();
 
-    match sqlx::query("SELECT 1 as test")
-        .fetch_one(db.get_pool())
+    match sqlx::query("SELECT 1 as test").fetch_one(db.get_pool())
         .await
     {
         Ok(_) => DatabaseStatus {

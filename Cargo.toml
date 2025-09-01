@@ -60,6 +60,9 @@ futures = "0.3"
 include_dir = "0.7.4"
 fake = { version = "4", features = ["derive", "bigdecimal", "chrono"] }
 once_cell = "1.21.3"
+lazy_static = "1.4"
+moka = { version = "0.12", features = ["future"] }
+urlencoding = "2.1"
 reqwest = { version = "0.12.20", features = ["json"] }
 rosu-v2 = "0.11.0"
 minacalc-rs = "0.1.3"
